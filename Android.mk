@@ -60,8 +60,8 @@ LOCAL_STATIC_LIBRARIES += SPIRV
 
 LOCAL_STATIC_LIBRARIES += enkiTS
 
+include $(BUILD_SHARED_LIBRARY)
+
 include $(LOCAL_PATH)/deps/Anvil/Android.mk \
 		$(LOCAL_PATH)/deps/enkiTS/Android.mk
-
-include $(BUILD_SHARED_LIBRARY)
 
