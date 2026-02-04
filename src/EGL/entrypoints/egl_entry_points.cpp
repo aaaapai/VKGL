@@ -637,18 +637,18 @@ eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
 EGLAPI __eglMustCastToProperFunctionPointerType EGLAPIENTRY
 eglGetProcAddress(const char *procname)
 {
-	
-	std::string real_func_name = procname;
-	void *proc = nullptr;
+    std::string real_func_name = procname;
+    void *proc = nullptr;
 
     proc = dlsym(RTLD_DEFAULT, real_func_name.c_str());
 
     if (!proc) {
-      printf("Failed to get EGL or OpenGL function: %s\n", real_func_name.c_str());
-      return nullptr;
+        printf("Failed to get EGL or OpenGL function: %s\n", real_func_name.c_str());
+        return nullptr;
     }
-    return proc;
-	
+    
+    // 将 void* 显式转换为函数指针类型
+    return reinterpret_cast<__eglMustCastToProperFunctionPointerType>(proc);
 }
 
 //TODO
