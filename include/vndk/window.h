@@ -17,13 +17,79 @@
 #ifndef ANDROID_VNDK_NATIVEWINDOW_ANATIVEWINDOW_H
 #define ANDROID_VNDK_NATIVEWINDOW_ANATIVEWINDOW_H
 
-#include <nativebase/nativebase.h>
-
 // vndk is a superset of the NDK
 #include <android/native_window.h>
 
 
 __BEGIN_DECLS
+
+
+typedef struct android_native_base_t
+{
+    /* a magic value defined by the actual EGL native type */
+    int magic;
+
+    /* the sizeof() of the actual EGL native type */
+    int version;
+
+    void* reserved[4];
+
+    /* reference-counting interface */
+    void (*incRef)(struct android_native_base_t* base);
+    void (*decRef)(struct android_native_base_t* base);
+} android_native_base_t;
+
+typedef struct android_native_rect_t
+{
+    int32_t left;
+    int32_t top;
+    int32_t right;
+    int32_t bottom;
+} android_native_rect_t;
+
+typedef struct ANativeWindowBuffer
+{
+#ifdef __cplusplus
+    ANativeWindowBuffer() {
+        common.magic = 1;
+        common.version = sizeof(ANativeWindowBuffer);
+        memset(common.reserved, 0, sizeof(common.reserved));
+    }
+
+    // Implement the methods that sp<ANativeWindowBuffer> expects so that it
+    // can be used to automatically refcount ANativeWindowBuffer's.
+    void incStrong(const void* /*id*/) const {
+        common.incRef(const_cast<android_native_base_t*>(&common));
+    }
+    void decStrong(const void* /*id*/) const {
+        common.decRef(const_cast<android_native_base_t*>(&common));
+    }
+#endif
+
+    struct android_native_base_t common;
+
+    int width;
+    int height;
+    int stride;
+    int format;
+    int usage_deprecated;
+    uintptr_t layerCount;
+
+    void* reserved[1];
+
+    const native_handle_t* handle;
+    uint64_t usage;
+
+    // we needed extra space for storing the 64-bits usage flags
+    // the number of slots to use from reserved_proc depends on the
+    // architecture.
+    void* reserved_proc[8 - (sizeof(uint64_t) / sizeof(void*))];
+} ANativeWindowBuffer_t;
+
+typedef struct ANativeWindowBuffer ANativeWindowBuffer;
+
+// Old typedef for backwards compatibility.
+typedef ANativeWindowBuffer_t android_native_buffer_t;
 
 /*
  * Convert this ANativeWindowBuffer into a AHardwareBuffer
