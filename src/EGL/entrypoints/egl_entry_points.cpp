@@ -104,33 +104,38 @@ eglReleaseThread(void)
 EGLAPI EGLContext EGLAPIENTRY
 eglGetCurrentContext(void)
 {
-    //THREAD_EXEC_RETURN(GetCurrentContext());
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)EGL::get_current_display();
+    if (!eglDisplay) {
+        return EGL_NO_CONTEXT;
+    }
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t *)( eglDisplay->get_current_bind_egl_context_p() );
     
-    return (EGLContext)egl_ctx;
+    return (EGLContext)(egl_ctx ? egl_ctx : EGL_NO_CONTEXT);
 }
 
 EGLAPI EGLSurface EGLAPIENTRY
 eglGetCurrentSurface(EGLint readdraw)
 {
-    //THREAD_EXEC_RETURN(GetCurrentSurface(readdraw));
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)EGL::get_current_display();
+    if (!eglDisplay) {
+        return EGL_NO_SURFACE;
+    }
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t *)( eglDisplay->get_current_bind_egl_context_p() );
+    if (!egl_ctx) {
+        return EGL_NO_SURFACE;
+    }
     
     EGL::eglSurface_t *egl_surf = (EGL::eglSurface_t *)( egl_ctx->get_egl_surface_p() );
     
-    return (EGLSurface)egl_surf;
+    return (EGLSurface)(egl_surf ? egl_surf : EGL_NO_SURFACE);
 }
 
 EGLAPI EGLDisplay EGLAPIENTRY
@@ -204,79 +209,167 @@ eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
     return EGL_SUCCESS;
 }
 
+// 不用看了，AI修的
 EGLAPI EGLBoolean EGLAPIENTRY
 eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
 {
-    //THREAD_EXEC_RETURN(MakeCurrent(dpy, draw, read, ctx));
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
-    auto egl_dpy = (EGL::eglDisplay_t*)dpy;
-    
-    auto egl_new_ctx = (EGL::eglContext_t*)ctx;
-    auto egl_old_ctx = (EGL::eglContext_t*)nullptr;
-    
-    auto egl_new_surf = (EGL::eglSurface_t*)draw;
-    auto egl_old_surf = (EGL::eglSurface_t*)nullptr;
-    
-    auto new_window = (void*)nullptr;
-    auto old_window = (void*)nullptr;
-    
-    if (egl_new_ctx != nullptr &&
-    	egl_new_surf != nullptr)
-    {
-    	egl_old_ctx = (EGL::eglContext_t*)egl_new_surf->get_egl_context_p();
-    	egl_old_surf = (EGL::eglSurface_t*)egl_new_ctx->get_egl_surface_p();
-    	
-    	if (egl_old_surf) old_window = egl_old_surf->get_window();
-    	if (egl_new_surf) new_window = egl_new_surf->get_window();
-    	
-    	{
-	    	egl_new_ctx->set_egl_surface_p(egl_new_surf);
-	    	
-    	    void* vk_backend_p = m_EGLInterface->p_create_vk_backend(egl_new_ctx);
-    
-            void* gl_context_p = m_EGLInterface->p_create_gl_context(egl_new_ctx, vk_backend_p);
-            
-            m_EGLInterface->p_set_vk_backend_gl_context(gl_context_p, vk_backend_p);
-            
-            egl_new_ctx->set_vk_backend_p(vk_backend_p);
-            egl_new_ctx->set_gl_context_p(gl_context_p);
-        }
-        
-    	if (egl_old_ctx != egl_new_ctx &&
-    		egl_old_ctx != nullptr)
-    	{
-    		void* old_vk_backend_p = egl_old_ctx->get_vk_backend_p();
-    		
-    		m_EGLInterface->p_destroy_vk_surface_swapchain(old_vk_backend_p, new_window);
-    		
-    		egl_old_ctx->set_egl_surface_p(nullptr);
-    	}
-    	else
-    	{
-    	    void* new_vk_backend_p = egl_new_ctx->get_vk_backend_p();
-    	    
-    	    if (egl_old_ctx == nullptr)
-    	    {
-        		m_EGLInterface->p_create_vk_surface_swapchain(new_vk_backend_p, new_window);
-        	}
-        	
-        	if (egl_old_ctx == egl_new_ctx)
-        	{
-    		    m_EGLInterface->p_recreate_vk_surface_swapchain(new_vk_backend_p, new_window);
-    		}
-    	}
-    	
-    	egl_new_surf->set_egl_context_p(egl_new_ctx);
+    // 1. 验证基础参数
+    if (dpy == EGL_NO_DISPLAY) {
+        EGL::set_current_egl_error(EGL_BAD_DISPLAY);
+        return EGL_FALSE;
     }
     
+    auto egl_dpy = (EGL::eglDisplay_t*)dpy;
+    if (!egl_dpy) {
+        EGL::set_current_egl_error(EGL_BAD_DISPLAY);
+        return EGL_FALSE;
+    }
+    
+    // 2. 检查m_EGLInterface是否已初始化
+    if (!m_EGLInterface) {
+        EGL::set_current_egl_error(EGL_NOT_INITIALIZED);
+        return EGL_FALSE;
+    }
+    
+    // 3. 处理解绑当前上下文的情况
+    if (ctx == EGL_NO_CONTEXT || draw == EGL_NO_SURFACE) {
+        // 解绑当前上下文
+        EGL::eglContext_t* current_ctx = (EGL::eglContext_t*)egl_dpy->get_current_bind_egl_context_p();
+        
+        if (current_ctx) {
+            // 清理当前上下文的状态
+            void* gl_context_p = current_ctx->get_gl_context_p();
+            if (gl_context_p) {
+                m_EGLInterface->p_make_current(nullptr);
+            }
+            
+            // 清理surface关联
+            EGL::eglSurface_t* current_surf = (EGL::eglSurface_t*)current_ctx->get_egl_surface_p();
+            if (current_surf) {
+                current_surf->set_egl_context_p(nullptr);
+            }
+            current_ctx->set_egl_surface_p(nullptr);
+        }
+        
+        egl_dpy->set_current_bind_egl_context_p(nullptr);
+        return EGL_TRUE;
+    }
+    
+    // 4. 验证新上下文和surface
+    auto egl_new_ctx = (EGL::eglContext_t*)ctx;
+    auto egl_new_surf = (EGL::eglSurface_t*)draw;
+    
+    if (!egl_new_ctx || !egl_new_surf) {
+        EGL::set_current_egl_error(EGL_BAD_PARAMETER);
+        return EGL_FALSE;
+    }
+    
+    // 5. 获取当前状态
+    auto egl_old_ctx = (EGL::eglContext_t*)egl_dpy->get_current_bind_egl_context_p();
+    auto egl_old_surf = (EGL::eglSurface_t*)(egl_old_ctx ? egl_old_ctx->get_egl_surface_p() : nullptr);
+    
+    // 6. 如果新旧上下文相同但surface不同，需要处理surface切换
+    if (egl_old_ctx == egl_new_ctx) {
+        if (egl_old_surf != egl_new_surf) {
+            // 相同上下文，不同surface：清理旧surface关联
+            if (egl_old_surf) {
+                egl_old_surf->set_egl_context_p(nullptr);
+            }
+            
+            // 更新上下文中的surface指针
+            egl_new_ctx->set_egl_surface_p(egl_new_surf);
+            egl_new_surf->set_egl_context_p(egl_new_ctx);
+            
+            // 重新创建swapchain（如果需要）
+            void* vk_backend_p = egl_new_ctx->get_vk_backend_p();
+            void* gl_context_p = egl_new_ctx->get_gl_context_p();
+            
+            if (vk_backend_p && gl_context_p) {
+                void* new_window = egl_new_surf->get_window();
+                m_EGLInterface->p_recreate_vk_surface_swapchain(vk_backend_p, new_window);
+            }
+            
+            egl_dpy->set_current_bind_egl_context_p(egl_new_ctx);
+            
+            if (gl_context_p) {
+                m_EGLInterface->p_make_current(gl_context_p);
+            }
+            
+            return EGL_TRUE;
+        } else {
+            // 完全相同，什么都不用做
+            return EGL_TRUE;
+        }
+    }
+    
+    // 7. 不同的上下文：清理旧上下文状态
+    if (egl_old_ctx) {
+        void* old_gl_context_p = egl_old_ctx->get_gl_context_p();
+        if (old_gl_context_p) {
+            m_EGLInterface->p_make_current(nullptr);
+        }
+        
+        // 清理旧上下文的surface关联
+        EGL::eglSurface_t* old_surf = (EGL::eglSurface_t*)egl_old_ctx->get_egl_surface_p();
+        if (old_surf) {
+            old_surf->set_egl_context_p(nullptr);
+        }
+        egl_old_ctx->set_egl_surface_p(nullptr);
+    }
+    
+    // 8. 设置新上下文和surface的关联
+    egl_new_ctx->set_egl_surface_p(egl_new_surf);
+    egl_new_surf->set_egl_context_p(egl_new_ctx);
+    
+    // 9. 创建或获取Vulkan后端和GL上下文
+    void* vk_backend_p = egl_new_ctx->get_vk_backend_p();
+    void* gl_context_p = egl_new_ctx->get_gl_context_p();
+    
+    if (!vk_backend_p || !gl_context_p) {
+        // 第一次为这个上下文设置current，需要创建资源
+        vk_backend_p = m_EGLInterface->p_create_vk_backend(egl_new_ctx);
+        if (!vk_backend_p) {
+            EGL::set_current_egl_error(EGL_BAD_ALLOC);
+            return EGL_FALSE;
+        }
+        
+        gl_context_p = m_EGLInterface->p_create_gl_context(egl_new_ctx, vk_backend_p);
+        if (!gl_context_p) {
+            m_EGLInterface->p_destroy_vk_backend(vk_backend_p);
+            EGL::set_current_egl_error(EGL_BAD_ALLOC);
+            return EGL_FALSE;
+        }
+        
+        m_EGLInterface->p_set_vk_backend_gl_context(gl_context_p, vk_backend_p);
+        
+        egl_new_ctx->set_vk_backend_p(vk_backend_p);
+        egl_new_ctx->set_gl_context_p(gl_context_p);
+        
+        // 创建surface swapchain
+        void* new_window = egl_new_surf->get_window();
+        m_EGLInterface->p_create_vk_surface_swapchain(vk_backend_p, new_window);
+    } else {
+        // 已经创建过资源，确保swapchain正确
+        void* new_window = egl_new_surf->get_window();
+        void* old_window = egl_old_surf ? egl_old_surf->get_window() : nullptr;
+        
+        if (new_window != old_window) {
+            m_EGLInterface->p_recreate_vk_surface_swapchain(vk_backend_p, new_window);
+        }
+    }
+    
+    // 10. 设置当前上下文
     egl_dpy->set_current_bind_egl_context_p(egl_new_ctx);
     
-    m_EGLInterface->p_make_current(egl_new_ctx->get_gl_context_p() );
+    // 11. 调用底层的make current
+    if (gl_context_p) {
+        m_EGLInterface->p_make_current(gl_context_p);
+    }
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
