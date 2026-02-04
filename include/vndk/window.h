@@ -19,10 +19,16 @@
 
 // vndk is a superset of the NDK
 #include <android/native_window.h>
-
+#include <string.h>
 
 __BEGIN_DECLS
 
+typedef struct native_handle {
+  int version; /* sizeof(native_handle_t) */
+  int numFds; /* number of file-descriptors at &data[0] */
+  int numInts; /* number of ints at &data[numFds] */
+  int data[0]; /* numFds + numInts ints */
+} native_handle_t;
 
 typedef struct android_native_base_t
 {
