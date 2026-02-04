@@ -25,6 +25,7 @@ MY_FILES_PATH := \
 	$(LOCAL_PATH)/src/OpenGL \
 	$(LOCAL_PATH)/src/Common \
     $(LOCAL_PATH)/src/EGL \
+    $(LOCAL_PATH)/src/Nativewindow \
     $(LOCAL_PATH)/src/GLX
 
 MY_FILES_SUFFIX := %.cpp
