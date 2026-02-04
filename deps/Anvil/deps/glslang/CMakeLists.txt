@@ -227,20 +227,12 @@ if(${CMAKE_VERSION} VERSION_LESS 3.1)
     # CMake versions before 3.1 do not understand CMAKE_CXX_STANDARD
     # remove this block once CMake >=3.1 has fixated in the ecosystem
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++_static -lc++abi")
 else()
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
-
-function(glslang_set_link_args TARGET)
-    # For MinGW compiles, statically link against the GCC and C++ runtimes.
-    # This avoids the need to ship those runtimes as DLLs.
-    if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-        set_target_properties(${TARGET} PROPERTIES
-                              LINK_FLAGS "-static -static-libgcc -static-libstdc++")
-    endif()
-endfunction(glslang_set_link_args)
 
 if(NOT COMMAND find_host_package)
     macro(find_host_package)
