@@ -1,6 +1,8 @@
 // A sample EGL implement
 
 #include <dlfcn.h>
+#include <cstdlib>
+#include <cstring>
 #include "OpenGL/entrypoints/egl_Interface.h"
 #include "EGL/entrypoints/egl_entry_points.h"
 #include <EGL/egl.h>
@@ -642,7 +644,7 @@ eglGetProcAddress(const char *procname)
     proc = dlsym(RTLD_DEFAULT, real_func_name.c_str());
 
     if (!proc) {
-      printf("Failed to get EGL function: %s\n", real_func_name.c_str())
+      printf("Failed to get EGL or OpenGL function: %s\n", real_func_name.c_str())
       return nullptr;
     }
     return proc;
