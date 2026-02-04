@@ -644,7 +644,7 @@ eglGetProcAddress(const char *procname)
     proc = dlsym(RTLD_DEFAULT, real_func_name.c_str());
 
     if (!proc) {
-      printf("Failed to get EGL or OpenGL function: %s\n", real_func_name.c_str())
+      printf("Failed to get EGL or OpenGL function: %s\n", real_func_name.c_str());
       return nullptr;
     }
     return proc;
