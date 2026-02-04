@@ -25,7 +25,7 @@
 namespace OpenGL
 {
 
-#define VKGLAPI extern
+#define VKGLAPI __attribute__((visibility("default")))
 
 
 // GL_VERSION_1_0
