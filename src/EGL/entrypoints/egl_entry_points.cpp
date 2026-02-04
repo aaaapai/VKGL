@@ -3,7 +3,7 @@
 #include <dlfcn.h>
 #include "OpenGL/entrypoints/egl_Interface.h"
 #include "EGL/entrypoints/egl_entry_points.h"
-#include "EGL/egl.h"
+#include <EGL/egl.h>
 
 #include "EGL/eglDisplay.h"
 #include "EGL/eglContext.h"
@@ -636,9 +636,19 @@ EGLAPI __eglMustCastToProperFunctionPointerType EGLAPIENTRY
 eglGetProcAddress(const char *procname)
 {
 	
-	//TODO
-    return NULL;
+	std::string real_func_name = procname;
+	void *proc = nullptr;
+
+    proc = dlsym(RTLD_DEFAULT, real_func_name.c_str());
+
+    if (!proc) {
+      printf("Failed to get EGL function: %s\n", real_func_name.c_str())
+      return nullptr;
+    }
+    return proc;
+	
 }
+
 //TODO
 /*
 EGLAPI EGLImageKHR EGLAPIENTRY
