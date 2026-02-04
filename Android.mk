@@ -47,7 +47,7 @@ LOCAL_CFLAGS += -funwind-tables -fvisibility=hidden
 
 LOCAL_CFLAGS += -DVK_USE_PLATFORM_ANDROID_KHR
 
-LOCAL_LDLIBS := -ldl -lc++_static -lc++abi
+LOCAL_LDLIBS := -ldl -lc++_static -lc++abi -lnativewindow
 #building as a shared lib
 
 LOCAL_STATIC_LIBRARIES := Anvil
