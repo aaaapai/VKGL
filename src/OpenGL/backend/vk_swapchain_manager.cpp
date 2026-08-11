@@ -294,8 +294,8 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
     if (!is_recreate_request)
     {
         window_ptr = Anvil::WindowFactory::create_window(Anvil::WINDOW_PLATFORM_ANDROID,
-        													reinterpret_cast<WindowHandle>(in_swapchain_props_ptr->window_handle),
-        													nullptr);
+                                                            reinterpret_cast<WindowHandle>(in_swapchain_props_ptr->window_handle),
+                                                            nullptr);
 
         if (window_ptr == nullptr)
         {
@@ -315,7 +315,6 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
     /* 2. Create a rendering surface for the window */
     if (!is_recreate_request)
     {
-        /* FIXME: Anvil interface flaw - fix Anvil-side and then get rid of the const_cast */
         auto create_info_ptr = Anvil::RenderingSurfaceCreateInfo::create(const_cast<Anvil::Instance*>(device_ptr->get_parent_instance() ),
                                                                          device_ptr,
                                                                          window_ptr.get(),
@@ -338,6 +337,18 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
         vkgl_assert(rendering_surface_ptr != nullptr);
     }
 
+    // ========== 新增：检查窗口尺寸是否有效 ==========
+    uint32_t width = rendering_surface_ptr->get_width();
+    uint32_t height = rendering_surface_ptr->get_height();
+    if (width == 0 || height == 0)
+    {
+        VKGL::g_logger_ptr->log(VKGL::LogLevel::Error,
+                                "Window surface size is zero (%dx%d), cannot create swapchain",
+                                width, height);
+        goto end;
+    }
+    // ==============================================
+
     /* 3. Create the swapchain */
     {
         Anvil::SwapchainCreateInfoUniquePtr create_info_ptr;
@@ -351,7 +362,7 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
                                                              rendering_surface_ptr.get(),
                                                              window_ptr.get           (),
                                                              swapchain_format,
-                                                             Anvil::ColorSpaceKHR::SRGB_NONLINEAR_KHR, //< TODO: prettify me
+                                                             Anvil::ColorSpaceKHR::SRGB_NONLINEAR_KHR,
                                                              present_mode,
                                                              image_usage_flags,
                                                              m_n_swapchain_images,
@@ -392,7 +403,7 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
         }
 
         format_vk = format_manager_ptr->get_best_fit_anvil_format(format_gl,
-                                                                  Anvil::FormatFeatureFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT); //< TODO: is this good enough?
+                                                                  Anvil::FormatFeatureFlagBits::DEPTH_STENCIL_ATTACHMENT_BIT);
 
         if (format_vk == Anvil::Format::UNKNOWN)
         {
@@ -413,11 +424,7 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
         }
     }
 
-    /* 5. Instantiate semaphores we're going to use for frame acquisition purposes.
-     *
-     * NOTE: Yes, semaphores in Vulkan are NOT recyclable. However, Anvil provides a nifty reset method
-     *       which handles the recreation process under the hood. And we get RAII for free.
-     */
+    /* 5. Instantiate semaphores we're going to use for frame acquisition purposes. */
     for (uint32_t n_semaphore = 0;
                   n_semaphore < m_n_swapchain_images;
                 ++n_semaphore)
