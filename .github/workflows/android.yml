@@ -9,15 +9,15 @@ jobs:
 
     # --- 新增：安装并配置 ccache ---
     - name: Setup ccache
-      uses: Chocobo1/setup-ccache-action@v1
+      uses: Chocobo1/setup-ccache-action@master
       with:
         # 根据需要调整缓存大小，例如 1G
         ccache_options: |
-          max_size=1G
+          max_size=3G
 
     # --- 新增：恢复 ccache 缓存 (可选但强烈推荐) ---
     - name: Cache ccache
-      uses: actions/cache@v4
+      uses: actions/cache@main
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ndk-ccache-${{ github.sha }}
