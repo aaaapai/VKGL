@@ -1400,17 +1400,26 @@ bool Anvil::BaseDevice::init_extension_func_ptrs()
         {
             /* NOTE: Certain device group entrypoints are only available if KHR_swapchain is also enabled */
             if (m_extension_enabled_info_ptr->get_device_extension_info()->khr_swapchain() )
-            {
-                m_khr_device_group_extension_entrypoints.vkAcquireNextImage2KHR                  = reinterpret_cast<PFN_vkAcquireNextImage2KHR>                 (get_proc_address("vkAcquireNextImage2KHR") );
-                m_khr_device_group_extension_entrypoints.vkGetPhysicalDevicePresentRectanglesKHR = reinterpret_cast<PFN_vkGetPhysicalDevicePresentRectanglesKHR>(get_proc_address("vkGetPhysicalDevicePresentRectanglesKHR") );
-                m_khr_device_group_extension_entrypoints.vkGetDeviceGroupSurfacePresentModesKHR  = reinterpret_cast<PFN_vkGetDeviceGroupSurfacePresentModesKHR> (get_proc_address("vkGetDeviceGroupSurfacePresentModesKHR") );
-                m_khr_device_group_extension_entrypoints.vkGetDeviceGroupPresentCapabilitiesKHR  = reinterpret_cast<PFN_vkGetDeviceGroupPresentCapabilitiesKHR> (get_proc_address("vkGetDeviceGroupPresentCapabilitiesKHR") );
+{
+    m_khr_device_group_extension_entrypoints.vkAcquireNextImage2KHR                  = reinterpret_cast<PFN_vkAcquireNextImage2KHR>                 (get_proc_address("vkAcquireNextImage2KHR") );
+    m_khr_device_group_extension_entrypoints.vkGetPhysicalDevicePresentRectanglesKHR = reinterpret_cast<PFN_vkGetPhysicalDevicePresentRectanglesKHR>(get_proc_address("vkGetPhysicalDevicePresentRectanglesKHR") );
+    m_khr_device_group_extension_entrypoints.vkGetDeviceGroupSurfacePresentModesKHR  = reinterpret_cast<PFN_vkGetDeviceGroupSurfacePresentModesKHR> (get_proc_address("vkGetDeviceGroupSurfacePresentModesKHR") );
+    m_khr_device_group_extension_entrypoints.vkGetDeviceGroupPresentCapabilitiesKHR  = reinterpret_cast<PFN_vkGetDeviceGroupPresentCapabilitiesKHR> (get_proc_address("vkGetDeviceGroupPresentCapabilitiesKHR") );
 
-                anvil_assert(m_khr_device_group_extension_entrypoints.vkAcquireNextImage2KHR                  != nullptr);
-                anvil_assert(m_khr_device_group_extension_entrypoints.vkGetDeviceGroupPresentCapabilitiesKHR  != nullptr);
-                anvil_assert(m_khr_device_group_extension_entrypoints.vkGetDeviceGroupSurfacePresentModesKHR  != nullptr);
-                anvil_assert(m_khr_device_group_extension_entrypoints.vkGetPhysicalDevicePresentRectanglesKHR != nullptr);
-            }
+    // 将断言改为警告日志，因为某些设备不支持这些函数（例如 Mali GPU）
+    if (m_khr_device_group_extension_entrypoints.vkAcquireNextImage2KHR == nullptr) {
+        VKGL::g_logger_ptr->log(VKGL::LogLevel::Warning, "vkAcquireNextImage2KHR not available");
+    }
+    if (m_khr_device_group_extension_entrypoints.vkGetDeviceGroupPresentCapabilitiesKHR == nullptr) {
+        VKGL::g_logger_ptr->log(VKGL::LogLevel::Warning, "vkGetDeviceGroupPresentCapabilitiesKHR not available");
+    }
+    if (m_khr_device_group_extension_entrypoints.vkGetDeviceGroupSurfacePresentModesKHR == nullptr) {
+        VKGL::g_logger_ptr->log(VKGL::LogLevel::Warning, "vkGetDeviceGroupSurfacePresentModesKHR not available");
+    }
+    if (m_khr_device_group_extension_entrypoints.vkGetPhysicalDevicePresentRectanglesKHR == nullptr) {
+        VKGL::g_logger_ptr->log(VKGL::LogLevel::Warning, "vkGetPhysicalDevicePresentRectanglesKHR not available");
+    }
+}
         }
     }
 
