@@ -266,6 +266,7 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
     Anvil::RenderingSurfaceUniquePtr       rendering_surface_ptr;
     Anvil::SwapchainUniquePtr              swapchain_ptr;
     Anvil::WindowUniquePtr                 window_ptr;
+    uint32_t width = 0, height = 0;
 
     vkgl_assert(device_ptr != nullptr);
 
@@ -338,8 +339,9 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
     }
 
     // ========== 新增：检查窗口尺寸是否有效 ==========
-    uint32_t width = rendering_surface_ptr->get_width();
-    uint32_t height = rendering_surface_ptr->get_height();
+    // 原先这里可能有 uint32_t width = rendering_surface_ptr->get_width(); 等
+    width = rendering_surface_ptr->get_width();
+    height = rendering_surface_ptr->get_height();
     if (width == 0 || height == 0)
     {
         VKGL::g_logger_ptr->log(VKGL::LogLevel::Error,
@@ -347,6 +349,7 @@ OpenGL::VKSwapchainManager::InternalSwapchainDataUniquePtr OpenGL::VKSwapchainMa
                                 width, height);
         goto end;
     }
+
     // ==============================================
 
     /* 3. Create the swapchain */
