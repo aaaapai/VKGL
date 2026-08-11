@@ -60,7 +60,7 @@ eglBindAPI(EGLenum api)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLenum EGLAPIENTRY
@@ -86,7 +86,7 @@ eglWaitClient(void)
     
     m_EGLInterface->p_finish(((EGL::eglContext_t *)eglGetCurrentContext() )->get_gl_context_p() );
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -98,7 +98,7 @@ eglReleaseThread(void)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLContext EGLAPIENTRY
@@ -182,7 +182,7 @@ eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t*)ctx;
-    if (egl_ctx == nullptr) return EGL_SUCCESS;
+    if (egl_ctx == nullptr) return EGL_TRUE;  // FIXED: success if null
     
     if (egl_ctx->get_gl_context_p() )
     {
@@ -201,7 +201,7 @@ eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
     
     delete egl_ctx;
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -276,7 +276,7 @@ eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
     
     m_EGLInterface->p_make_current(egl_new_ctx->get_gl_context_p() );
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -288,7 +288,7 @@ eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint *value)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -303,7 +303,7 @@ eglWaitGL(void)
     
     m_EGLInterface->p_finish( ((EGL::eglContext_t *)eglGetCurrentContext())->get_gl_context_p() );
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -315,7 +315,7 @@ eglWaitNative(EGLint engine)
     FUN_ENTRY(DEBUG_DEPTH);
 
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -326,7 +326,7 @@ eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
-    EGLBoolean result = EGL_SUCCESS;
+    EGLBoolean result = EGL_TRUE;   // FIXED: start with success
     char *error = NULL;
     
     #if defined(USE_COMBINED_EGL_OPENGL)
@@ -351,9 +351,10 @@ eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
         }
     #endif
     
-    if (major) *major = 1;
-    if (minor) *minor = 4;
-    
+    if (result == EGL_TRUE) {
+        if (major) *major = 1;
+        if (minor) *minor = 4;
+    }
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)dpy;
     
@@ -363,9 +364,7 @@ eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
     
     EGL::set_current_display( eglDisplay );
     
-    
-    return result;
-    
+    return result;   // now returns EGL_TRUE on success, EGL_FALSE on failure
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -391,8 +390,7 @@ eglTerminate(EGLDisplay dpy)
     
     delete eglDisplay;
     
-    
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI const char * EGLAPIENTRY
@@ -428,7 +426,7 @@ eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size, EGLint *nu
     
     EGL::Config::get_configs_for_attribs ((int**)configs, config_size, num_config, nullptr);
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -441,7 +439,7 @@ eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, E
     
     EGL::Config::get_configs_for_attribs ((int**)configs, config_size, num_config, (int*)attrib_list);
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -456,7 +454,7 @@ eglGetConfigAttrib(EGLDisplay dpy, EGLConfig config, EGLint attribute, EGLint *v
     
     if (value) *value = out_value;
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLSurface EGLAPIENTRY
@@ -507,7 +505,7 @@ eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglSurface_t *egl_surf = (EGL::eglSurface_t*)surface;
-    if (egl_surf == nullptr) return EGL_SUCCESS;
+    if (egl_surf == nullptr) return EGL_TRUE;  // FIXED
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t*)egl_surf->get_egl_context_p();
     if (egl_ctx) {
@@ -518,7 +516,7 @@ eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
     
     delete egl_surf;
     
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -530,7 +528,7 @@ eglQuerySurface(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint *va
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLSurface EGLAPIENTRY
@@ -554,7 +552,7 @@ eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint va
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -566,7 +564,7 @@ eglBindTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -578,7 +576,7 @@ eglReleaseTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -590,7 +588,7 @@ eglSwapInterval(EGLDisplay dpy, EGLint interval)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
@@ -615,7 +613,7 @@ eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
     		
     		m_EGLInterface->p_swap_buffers(gl_context_p);
     		
-    		result = EGL_SUCCESS;
+    		result = EGL_TRUE;  // FIXED
     	}
     }
     
@@ -631,7 +629,7 @@ eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
     FUN_ENTRY(DEBUG_DEPTH);
     
     //TODO
-    return EGL_SUCCESS;
+    return EGL_TRUE;  // FIXED
 }
 
 EGLAPI __eglMustCastToProperFunctionPointerType EGLAPIENTRY
