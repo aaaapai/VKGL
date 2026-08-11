@@ -203,76 +203,76 @@ eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 EGLAPI EGLBoolean EGLAPIENTRY
 eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
 {
-    //THREAD_EXEC_RETURN(MakeCurrent(dpy, draw, read, ctx));
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
-    
+
     auto egl_dpy = (EGL::eglDisplay_t*)dpy;
-    
+    if (!egl_dpy) {
+        EGL::set_current_egl_error(EGL_BAD_DISPLAY);
+        return EGL_FALSE;
+    }
+
     auto egl_new_ctx = (EGL::eglContext_t*)ctx;
+    auto egl_new_surf = (EGL::eglSurface_t*)draw; // 注意：read 参数未使用，但标准要求两者一致
+
+    // 处理解绑上下文（ctx == EGL_NO_CONTEXT）
+    if (egl_new_ctx == nullptr) {
+        // 如果当前有绑定的上下文，可能需要解绑表面，但简单起见仅清除状态
+        egl_dpy->set_current_bind_egl_context_p(nullptr);
+        if (m_EGLInterface && m_EGLInterface->p_make_current) {
+            m_EGLInterface->p_make_current(nullptr);
+        }
+        return EGL_TRUE;
+    }
+
+    // 如果表面无效，可以选择返回错误或使用 pbuffer，这里按原逻辑要求非空
+    if (egl_new_surf == nullptr) {
+        EGL::set_current_egl_error(EGL_BAD_SURFACE);
+        return EGL_FALSE;
+    }
+
+    // --- 以下保持原有创建上下文、交换链等逻辑（从您的原始代码复制） ---
     auto egl_old_ctx = (EGL::eglContext_t*)nullptr;
-    
-    auto egl_new_surf = (EGL::eglSurface_t*)draw;
     auto egl_old_surf = (EGL::eglSurface_t*)nullptr;
-    
     auto new_window = (void*)nullptr;
     auto old_window = (void*)nullptr;
-    
-    if (egl_new_ctx != nullptr &&
-    	egl_new_surf != nullptr)
-    {
-    	egl_old_ctx = (EGL::eglContext_t*)egl_new_surf->get_egl_context_p();
-    	egl_old_surf = (EGL::eglSurface_t*)egl_new_ctx->get_egl_surface_p();
-    	
-    	if (egl_old_surf) old_window = egl_old_surf->get_window();
-    	if (egl_new_surf) new_window = egl_new_surf->get_window();
-    	
-    	{
-	    	egl_new_ctx->set_egl_surface_p(egl_new_surf);
-	    	
-    	    void* vk_backend_p = m_EGLInterface->p_create_vk_backend(egl_new_ctx);
-    
+
+    if (egl_new_ctx != nullptr && egl_new_surf != nullptr) {
+        egl_old_ctx = (EGL::eglContext_t*)egl_new_surf->get_egl_context_p();
+        egl_old_surf = (EGL::eglSurface_t*)egl_new_ctx->get_egl_surface_p();
+        if (egl_old_surf) old_window = egl_old_surf->get_window();
+        if (egl_new_surf) new_window = egl_new_surf->get_window();
+
+        {
+            egl_new_ctx->set_egl_surface_p(egl_new_surf);
+            void* vk_backend_p = m_EGLInterface->p_create_vk_backend(egl_new_ctx);
             void* gl_context_p = m_EGLInterface->p_create_gl_context(egl_new_ctx, vk_backend_p);
-            
             m_EGLInterface->p_set_vk_backend_gl_context(gl_context_p, vk_backend_p);
-            
             egl_new_ctx->set_vk_backend_p(vk_backend_p);
             egl_new_ctx->set_gl_context_p(gl_context_p);
         }
-        
-    	if (egl_old_ctx != egl_new_ctx &&
-    		egl_old_ctx != nullptr)
-    	{
-    		void* old_vk_backend_p = egl_old_ctx->get_vk_backend_p();
-    		
-    		m_EGLInterface->p_destroy_vk_surface_swapchain(old_vk_backend_p, new_window);
-    		
-    		egl_old_ctx->set_egl_surface_p(nullptr);
-    	}
-    	else
-    	{
-    	    void* new_vk_backend_p = egl_new_ctx->get_vk_backend_p();
-    	    
-    	    if (egl_old_ctx == nullptr)
-    	    {
-        		m_EGLInterface->p_create_vk_surface_swapchain(new_vk_backend_p, new_window);
-        	}
-        	
-        	if (egl_old_ctx == egl_new_ctx)
-        	{
-    		    m_EGLInterface->p_recreate_vk_surface_swapchain(new_vk_backend_p, new_window);
-    		}
-    	}
-    	
-    	egl_new_surf->set_egl_context_p(egl_new_ctx);
+
+        if (egl_old_ctx != egl_new_ctx && egl_old_ctx != nullptr) {
+            void* old_vk_backend_p = egl_old_ctx->get_vk_backend_p();
+            m_EGLInterface->p_destroy_vk_surface_swapchain(old_vk_backend_p, new_window);
+            egl_old_ctx->set_egl_surface_p(nullptr);
+        } else {
+            void* new_vk_backend_p = egl_new_ctx->get_vk_backend_p();
+            if (egl_old_ctx == nullptr) {
+                m_EGLInterface->p_create_vk_surface_swapchain(new_vk_backend_p, new_window);
+            }
+            if (egl_old_ctx == egl_new_ctx) {
+                m_EGLInterface->p_recreate_vk_surface_swapchain(new_vk_backend_p, new_window);
+            }
+        }
+        egl_new_surf->set_egl_context_p(egl_new_ctx);
     }
-    
+
     egl_dpy->set_current_bind_egl_context_p(egl_new_ctx);
-    
-    m_EGLInterface->p_make_current(egl_new_ctx->get_gl_context_p() );
-    
-    return EGL_TRUE;  // FIXED
+    if (m_EGLInterface && m_EGLInterface->p_make_current) {
+        m_EGLInterface->p_make_current(egl_new_ctx->get_gl_context_p());
+    }
+    return EGL_TRUE;
 }
 
 EGLAPI EGLBoolean EGLAPIENTRY
