@@ -6,8 +6,32 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@main
+
+    # --- 新增：安装并配置 ccache ---
+    - name: Setup ccache
+      uses: Chocobo1/setup-ccache-action@v1
+      with:
+        # 根据需要调整缓存大小，例如 1G
+        ccache_options: |
+          max_size=1G
+
+    # --- 新增：恢复 ccache 缓存 (可选但强烈推荐) ---
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-ndk-ccache-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-ndk-ccache-
+
     - name: build
       run: |
+        # 设置 NDK_CCACHE 环境变量，让 ndk-build 使用 ccache[reference:3][reference:4]
+        export NDK_CCACHE=$(which ccache)
+        # 可选：查看缓存统计信息
+        ccache -s
+        
+        # 执行你的构建命令
         $ANDROID_NDK_LATEST_HOME/ndk-build -j8 APP_PLATFORM=android-24 APP_ABI=arm64-v8a NDK_PROJECT_PATH=./ APP_BUILD_SCRIPT=./Android.mk NDK_APP_APPLICATION_MK=./Application.mk
 
     - name: Upload build output
@@ -15,4 +39,4 @@ jobs:
       with:
         name: VKGGGGGGGGGGGL
         path: |
-              **/*.so
+          **/*.so
