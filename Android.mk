@@ -43,10 +43,10 @@ LOCAL_CFLAGS = -g -std=c++17 -Wall
 LOCAL_CFLAGS += -frtti -fno-exceptions
 LOCAL_CFLAGS += -fdeclspec
 LOCAL_CFLAGS += -fms-extensions
-#LOCAL_CFLAGS += -O3 -mllvm -polly
+LOCAL_CFLAGS += -O3 -mllvm -polly
 LOCAL_CFLAGS += -funwind-tables -fvisibility=hidden
 
-LOCAL_CFLAGS += -DVK_USE_PLATFORM_ANDROID_KHR
+LOCAL_CFLAGS += -DVK_USE_PLATFORM_ANDROID_KHR -DUSE_COMBINED_EGL_OPENGL
 
 LOCAL_LDLIBS := -ldl -lc++_static -lc++abi
 #building as a shared lib
