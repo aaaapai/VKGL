@@ -104,31 +104,30 @@ eglReleaseThread(void)
 EGLAPI EGLContext EGLAPIENTRY
 eglGetCurrentContext(void)
 {
-    //THREAD_EXEC_RETURN(GetCurrentContext());
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)EGL::get_current_display();
+    if (!eglDisplay) return EGL_NO_CONTEXT;
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t *)( eglDisplay->get_current_bind_egl_context_p() );
-    
-    return (EGLContext)egl_ctx;
+    return (EGLContext)egl_ctx; // 可能为空，但合法
 }
 
 EGLAPI EGLSurface EGLAPIENTRY
 eglGetCurrentSurface(EGLint readdraw)
 {
-    //THREAD_EXEC_RETURN(GetCurrentSurface(readdraw));
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)EGL::get_current_display();
+    if (!eglDisplay) return EGL_NO_SURFACE;
     
     EGL::eglContext_t *egl_ctx = (EGL::eglContext_t *)( eglDisplay->get_current_bind_egl_context_p() );
+    if (!egl_ctx) return EGL_NO_SURFACE;
     
     EGL::eglSurface_t *egl_surf = (EGL::eglSurface_t *)( egl_ctx->get_egl_surface_p() );
+    if (!egl_surf) return EGL_NO_SURFACE;
     
     return (EGLSurface)egl_surf;
 }
@@ -136,14 +135,11 @@ eglGetCurrentSurface(EGLint readdraw)
 EGLAPI EGLDisplay EGLAPIENTRY
 eglGetCurrentDisplay(void)
 {
-    //THREAD_EXEC_RETURN(GetCurrentDisplay());
-    
     FUN_ENTRY_GLAPI_CALL(DEBUG_DEPTH);
     FUN_ENTRY(DEBUG_DEPTH);
     
     EGL::eglDisplay_t* eglDisplay = (EGL::eglDisplay_t*)EGL::get_current_display();
-    
-    return eglDisplay;
+    return (EGLDisplay)(eglDisplay ? eglDisplay : EGL_NO_DISPLAY);
 }
 
 EGLAPI EGLContext EGLAPIENTRY
