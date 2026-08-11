@@ -85,23 +85,15 @@ int* EGL::Config::get_next_config_ptr (int* in_config_ptr)
 	return result_ptr;
 }
 
-
 int EGL::Config::get_config_value_from_attrib (int* in_config_ptr, int in_attrib)
-{//    FUN_ENTRY(DEBUG_DEPTH);
-	int out_value = EGL_NONE;
-	
-	if (false == check_is_config_type(in_config_ptr) ) {
-		in_config_ptr++;
-	}
-	
-	while (*in_config_ptr != in_attrib 		&&
-			*in_config_ptr != EGL_NONE) {
-		in_config_ptr += 2;
-	}
-	in_config_ptr--;
-	
-	out_value = *in_config_ptr;
-	return out_value;
+{
+    while (*in_config_ptr != EGL_NONE) {
+        if (*in_config_ptr == in_attrib) {
+            return *(in_config_ptr + 1);  // 返回对应的值
+        }
+        in_config_ptr += 2;  // 跳到下一对 attribute-value
+    }
+    return EGL_NONE;  // 未找到
 }
 
 bool EGL::Config::compare_config_attribs (int* in_config_ptr, int* in_attribs_ptr)
